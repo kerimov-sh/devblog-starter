@@ -1,6 +1,14 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { environment } from '../../environments/environment';
+
+export interface PagedResult<T> {
+  items: T[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+}
 
 export interface PostSummary {
   id: number;
@@ -27,8 +35,9 @@ export interface Comment {
 export class PostService {
   private http = inject(HttpClient);
 
-  getPosts() {
-    return this.http.get<PostSummary[]>(`${environment.apiUrl}/posts`);
+  getPosts(page = 1, pageSize = 20) {
+    const params = new HttpParams().set('page', page).set('pageSize', pageSize);
+    return this.http.get<PagedResult<PostSummary>>(`${environment.apiUrl}/posts`, { params });
   }
 
   getPost(slug: string) {

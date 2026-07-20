@@ -9,12 +9,19 @@ public static class PostsEndpoint
 {
     public static void Map(WebApplication app)
     {
-        // TODO: add pagination — şu an tüm postlar dönüyor
-        app.MapGet("/posts", async (AppDbContext db) =>
+        app.MapGet("/posts", async (AppDbContext db, int page = 1, int pageSize = 20) =>
         {
-            var posts = await db.Posts
-                .Include(p => p.Author)
+            page = page < 1 ? 1 : page;
+            pageSize = Math.Clamp(pageSize, 1, 100);
+
+            var query = db.Posts.AsNoTracking();
+
+            var totalCount = await query.CountAsync();
+
+            var posts = await query
                 .OrderByDescending(p => p.PublishedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .Select(p => new
                 {
                     p.Id,
@@ -26,7 +33,14 @@ public static class PostsEndpoint
                 })
                 .ToListAsync();
 
-            return Results.Ok(posts);
+            return Results.Ok(new
+            {
+                Items = posts,
+                Page = page,
+                PageSize = pageSize,
+                TotalCount = totalCount,
+                TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+            });
         });
 
         app.MapGet("/posts/{slug}", async (string slug, AppDbContext db) =>

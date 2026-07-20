@@ -15,6 +15,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasIndex(p => p.Slug);
 
         modelBuilder.Entity<Post>()
+            .HasIndex(p => p.PublishedAt);
+
+        modelBuilder.Entity<Post>()
             .HasOne(p => p.Author)
             .WithMany()
             .HasForeignKey(p => p.AuthorId);
