@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using DevBlog.Api.Data;
 using DevBlog.Api.Models;
+using DevBlog.Api.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace DevBlog.Api.Endpoints;
@@ -9,38 +10,10 @@ public static class PostsEndpoint
 {
     public static void Map(WebApplication app)
     {
-        app.MapGet("/posts", async (AppDbContext db, int page = 1, int pageSize = 20) =>
+        app.MapGet("/posts", async (IPostService postService, int page = 1, int pageSize = 20, string? tag = null) =>
         {
-            page = page < 1 ? 1 : page;
-            pageSize = Math.Clamp(pageSize, 1, 100);
-
-            var query = db.Posts.AsNoTracking();
-
-            var totalCount = await query.CountAsync();
-
-            var posts = await query
-                .OrderByDescending(p => p.PublishedAt)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .Select(p => new
-                {
-                    p.Id,
-                    p.Title,
-                    p.Slug,
-                    p.Tags,
-                    p.PublishedAt,
-                    Author = p.Author.Username
-                })
-                .ToListAsync();
-
-            return Results.Ok(new
-            {
-                Items = posts,
-                Page = page,
-                PageSize = pageSize,
-                TotalCount = totalCount,
-                TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
-            });
+            var result = await postService.GetPostsAsync(page, pageSize, tag);
+            return Results.Ok(result);
         });
 
         app.MapGet("/posts/{slug}", async (string slug, AppDbContext db) =>
@@ -71,27 +44,30 @@ public static class PostsEndpoint
             return post is null ? Results.NotFound() : Results.Ok(post);
         });
 
-        // TODO: slug uniqueness validation eksik
-        app.MapPost("/posts", async (CreatePostRequest req, AppDbContext db, ClaimsPrincipal user) =>
+        app.MapPost("/posts", async (CreatePostRequest req, IPostService postService, ClaimsPrincipal user) =>
         {
             var authorId = int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var result = await postService.CreatePostAsync(req, authorId);
 
-            var post = new Post
-            {
-                Title = req.Title,
-                Content = req.Content,
-                Slug = req.Slug,
-                Tags = req.Tags,
-                PublishedAt = DateTime.UtcNow,
-                AuthorId = authorId
-            };
-
-            db.Posts.Add(post);
-            await db.SaveChangesAsync();
-
-            return Results.Created($"/posts/{post.Slug}", new { post.Id, post.Slug });
+            return result.Success
+                ? Results.Created($"/posts/{result.Post!.Slug}", result.Post)
+                : Results.Conflict(new { error = result.Error });
         }).RequireAuthorization();
     }
 }
 
 public record CreatePostRequest(string Title, string Content, string Slug, string Tags);
+
+public record PostSummaryResponse(int Id, string Title, string Slug, string Tags, DateTime PublishedAt, string Author);
+
+public record PagedPostsResponse(
+    IReadOnlyList<PostSummaryResponse> Items,
+    int Page,
+    int PageSize,
+    int TotalCount,
+    int TotalPages
+);
+
+public record CreatePostResponse(int Id, string Slug);
+
+public record CreatePostResult(bool Success, CreatePostResponse? Post, string? Error);

@@ -1,6 +1,8 @@
 using System.Text;
 using DevBlog.Api.Data;
 using DevBlog.Api.Endpoints;
+using DevBlog.Api.Repositories;
+using DevBlog.Api.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -11,14 +13,20 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// 2. CORS — TODO: restrict in production
+// 2. Repositories & Services
+builder.Services.AddScoped<ICommentRepository, CommentRepository>();
+builder.Services.AddScoped<ICommentService, CommentService>();
+builder.Services.AddScoped<IPostRepository, PostRepository>();
+builder.Services.AddScoped<IPostService, PostService>();
+
+// 3. CORS — TODO: restrict in production
 builder.Services.AddCors(options =>
     options.AddDefaultPolicy(policy =>
         policy.AllowAnyOrigin()
               .AllowAnyMethod()
               .AllowAnyHeader()));
 
-// 3. JWT Authentication
+// 4. JWT Authentication
 var jwtSecret = "devblog-super-secret-key-2024-dev"; // TODO: move to config
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -32,15 +40,15 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-// 4. Authorization
+// 5. Authorization
 builder.Services.AddAuthorization();
 
-// 5. OpenAPI
+// 6. OpenAPI
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// 6. Apply migrations and seed
+// 7. Apply migrations and seed
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
