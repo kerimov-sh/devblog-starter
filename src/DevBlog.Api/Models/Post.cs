@@ -8,6 +8,7 @@ public class Post
     public string Slug { get; set; } = "";
     public string Tags { get; set; } = "";
     public DateTime PublishedAt { get; set; }
+    public int ReadingTimeMinutes { get; set; }
     public int AuthorId { get; set; }
     public User Author { get; set; } = null!;
     public ICollection<Comment> Comments { get; set; } = [];
