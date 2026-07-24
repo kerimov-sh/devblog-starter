@@ -15,3 +15,6 @@ devblog-ui/dist/
 # Misc
 .DS_Store
 Thumbs.db
+
+# Security audit reports (may contain exploitable vulnerability details)
+security-reports/
