@@ -52,7 +52,6 @@ Aşağıdakiler mevcut kodda hedef mimariye uymayan, bilinçli/bilinen teknik bo
 - **`AuthEndpoint.Map`**, `AppDbContext`'i doğrudan enjekte ediyor ve login/token üretim mantığını endpoint içinde yürütüyor — service/repository ayrımı yok.
 - **`PostsEndpoint.Map`**, tüm route handler'larında `AppDbContext`'i doğrudan enjekte ediyor; sorgular ve post oluşturma mantığı endpoint içinde.
 - **`CommentsEndpoint.Map`**, `AppDbContext`'i doğrudan enjekte ediyor; comment oluşturma mantığı endpoint içinde.
-- Parolalar gerçek hash yerine Base64 ile kodlanıyor (`AuthEndpoint.cs`, `DataSeeder.cs`).
 - JWT imzalama secret'ı `Program.cs` ve `AuthEndpoint.cs` içinde hardcoded string olarak tutuluyor (elle senkron — biri değişirse diğeri de değişmeli).
 - CORS politikası `AllowAnyOrigin/Method/Header`.
 - `POST /posts` üzerinde slug tekilliği validasyonu yok.

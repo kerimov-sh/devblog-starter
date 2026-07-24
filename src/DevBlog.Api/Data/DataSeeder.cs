@@ -8,8 +8,7 @@ public static class DataSeeder
     {
         if (db.Users.Any()) return;
 
-        // TODO: proper hashing needed
-        var adminPasswordHash = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("admin"));
+        var adminPasswordHash = BCrypt.Net.BCrypt.HashPassword("admin");
 
         var admin = new User
         {

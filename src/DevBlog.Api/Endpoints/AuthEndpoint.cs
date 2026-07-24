@@ -13,12 +13,9 @@ public static class AuthEndpoint
     {
         app.MapPost("/auth/login", async (LoginRequest req, AppDbContext db) =>
         {
-            // TODO: proper hashing needed
-            var hash = Convert.ToBase64String(Encoding.UTF8.GetBytes(req.Password));
-            var user = await db.Users.FirstOrDefaultAsync(u =>
-                u.Username == req.Username && u.PasswordHash == hash);
+            var user = await db.Users.FirstOrDefaultAsync(u => u.Username == req.Username);
 
-            if (user is null)
+            if (user is null || !BCrypt.Net.BCrypt.Verify(req.Password, user.PasswordHash))
                 return Results.Unauthorized();
 
             var jwtSecret = "devblog-super-secret-key-2024-dev"; // TODO: move to config
