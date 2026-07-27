@@ -1,4 +1,15 @@
 {
     "model": "sonnet",
-    "effortLevel": "high"
+    "effortLevel": "high",
+    "extraKnownMarketplaces": {
+        "devblog-toolkit-marketplace": {
+            "source": {
+                "source": "directory",
+                "path": "."
+            }
+        }
+    },
+    "enabledPlugins": {
+        "devblog-toolkit@devblog-toolkit-marketplace": true
+    }
 }

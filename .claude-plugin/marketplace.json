@@ -1,0 +1,13 @@
+{
+  "name": "devblog-toolkit-marketplace",
+  "owner": {
+    "name": "türkay ürkmez"
+  },
+  "plugins": [
+    {
+      "name": "devblog-toolkit",
+      "source": "./plugins/devblog-toolkit",
+      "description": "DevBlog Starter reposuna özel Claude Code skill'leri (commit-message, ef-migration, security-audit, seo-settings, uncommitted-review, yeni-endpoint)."
+    }
+  ]
+}

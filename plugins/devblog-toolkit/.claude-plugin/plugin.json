@@ -1,0 +1,8 @@
+{
+  "name": "devblog-toolkit",
+  "description": "DevBlog Starter reposuna özel Claude Code skill'leri: commit-message, ef-migration, security-audit, seo-settings, uncommitted-review, yeni-endpoint.",
+  "version": "1.0.0",
+  "author": {
+    "name": "türkay ürkmez"
+  }
+}
