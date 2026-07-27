@@ -29,6 +29,7 @@ npm run watch       # ng build --watch --configuration development
 ### Mevcut Mimari (kod tabanının bugünkü hali)
 
 - Backend endpoint'leri `src/DevBlog.Api/Endpoints/` altında feature'a göre gruplanır (`AuthEndpoint`, `PostsEndpoint`, `CommentsEndpoint`), her biri route'ları kaydeden statik bir `Map(WebApplication app)` metodu sunar.
+- `LikesEndpoint` (`POST /posts/{slug}/like`) ve `SearchEndpoint` (`GET /search/{arg}`) da aynı grupta yer alır; ikisi de hedef mimariye uygun şekilde `IPostService`/`ILikeService` + repository katmanı üzerinden çalışır — yeni endpoint eklerken örnek alınacak referanslar bunlardır.
 - `Program.cs` tek composition root'tur: DbContext, CORS, JWT auth ve OpenAPI orada yapılandırılır; başlangıçta `db.Database.Migrate()` ve ardından `DataSeeder.Seed(db)` çalışır — bu yüzden SQLite DB (`devblog.db`) API her başladığında otomatik oluşturulur/migrate edilir/seed edilir.
 - Data katmanı: `AppDbContext` (`src/DevBlog.Api/Data/AppDbContext.cs`), `Users`, `Posts`, `Comments` DbSet'lerini ve `OnModelCreating` içindeki FK/index yapılandırmasını tanımlar. `DataSeeder`, `Users` tablosu boşsa `admin`/`admin` kullanıcısı ile örnek post/comment seed eder.
 - Modeller (`src/DevBlog.Api/Models/`) düz EF entity'leridir: `Post` (bir `User` yazara ait, birden çok `Comment`'e sahip), `Comment`, `User` (`Role` alanı var, ör. `Admin`/`Author`).
@@ -50,16 +51,15 @@ Backend için hedeflenen katmanlaşma:
 Aşağıdakiler mevcut kodda hedef mimariye uymayan, bilinçli/bilinen teknik borçlardır — göreve özel olarak istenmedikçe sessizce "düzeltilmemelidir":
 
 - **`AuthEndpoint.Map`**, `AppDbContext`'i doğrudan enjekte ediyor ve login/token üretim mantığını endpoint içinde yürütüyor — service/repository ayrımı yok.
-- **`PostsEndpoint.Map`**, tüm route handler'larında `AppDbContext`'i doğrudan enjekte ediyor; sorgular ve post oluşturma mantığı endpoint içinde.
-- **`CommentsEndpoint.Map`**, `AppDbContext`'i doğrudan enjekte ediyor; comment oluşturma mantığı endpoint içinde.
+- **`PostsEndpoint.Map`** kısmen hedef mimariye taşındı: `GET /posts` ve `POST /posts` artık `IPostService` kullanıyor, ama `GET /posts/{slug}` hâlâ `AppDbContext`'i doğrudan enjekte ediyor.
+- **`CommentsEndpoint.Map`** kısmen hedef mimariye taşındı: `GET /comments` artık `ICommentService` kullanıyor, ama `POST /posts/{slug}/comments` hâlâ `AppDbContext`'i doğrudan enjekte ediyor.
 - JWT imzalama secret'ı `Program.cs` ve `AuthEndpoint.cs` içinde hardcoded string olarak tutuluyor (elle senkron — biri değişirse diğeri de değişmeli).
 - CORS politikası `AllowAnyOrigin/Method/Header`.
-- `POST /posts` üzerinde slug tekilliği validasyonu yok.
-- Endpoint'ler response için adlandırılmış `*Response` record'ları yerine anonim tip (`new { ... }`) döndürüyor (bkz. Naming Convention).
+- `AuthEndpoint`, response için adlandırılmış bir `*Response` record'u yerine hâlâ anonim tip (`new { token = ... }`) döndürüyor; `PostsEndpoint`/`CommentsEndpoint`/`LikesEndpoint` artık adlandırılmış `*Response` record'larına geçti (bkz. Naming Convention) — kalan tek borç `AuthEndpoint`.
 
 ## Naming Convention
 
-- **Backend (C#)**: PascalCase sınıf/metot/property (`PostsEndpoint`, `CreatePostRequest`); endpoint gruplama sınıfları `<Feature>Endpoint` şeklinde adlandırılır ve statik bir `Map(WebApplication app)` metodu sunar. Request DTO'ları `Create<Entity>Request` gibi record olarak tanımlanır (bkz. `CreatePostRequest`, `CreateCommentRequest`, `LoginRequest`). Response amaçlı DTO record'ları `Response` ile bitmelidir (ör. `LoginResponse`, `PostSummaryResponse`) — mevcut kodda endpoint'ler bunun yerine anonim tip (`new { ... }`) döndürüyor; bu da "Bilinen Borçlar" kapsamındadır ve yeni/değiştirilen endpoint'lerde adlandırılmış `*Response` record'larına geçilmelidir.
+- **Backend (C#)**: PascalCase sınıf/metot/property (`PostsEndpoint`, `CreatePostRequest`); endpoint gruplama sınıfları `<Feature>Endpoint` şeklinde adlandırılır ve statik bir `Map(WebApplication app)` metodu sunar. Request DTO'ları `Create<Entity>Request` gibi record olarak tanımlanır (bkz. `CreatePostRequest`, `CreateCommentRequest`, `LoginRequest`). Response amaçlı DTO record'ları `Response` ile bitmelidir (ör. `PostSummaryResponse`, `CommentResponse`, `LikeToggleResponse`) — `PostsEndpoint`/`CommentsEndpoint`/`LikesEndpoint` bu kalıba geçti; `AuthEndpoint` hâlâ anonim tip (`new { token = ... }`) döndürüyor ve bu "Bilinen Borçlar" kapsamındadır.
 - **Frontend (TypeScript/Angular)**: standalone component'ler dosya bazında `kebab-case` klasör/isimlendirme kullanır (`pages/post-list/post-list.component.ts`), sınıf isimleri PascalCase + `Component` soneki (`PostListComponent`). Servisler `<Domain>Service` (`AuthService`, `PostService`) olarak adlandırılır ve `src/app/services/` altında toplanır. Interceptor'lar camelCase fonksiyon adı + `Interceptor` soneki kullanır (`authInterceptor`).
 - Route path'leri ve API URL segmentleri lowercase/kebab-case değil, düz İngilizce kelimelerle çoğul isim şeklindedir (`/posts`, `/posts/{slug}/comments`).
 
