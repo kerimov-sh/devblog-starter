@@ -38,4 +38,7 @@ public class PostRepository(AppDbContext db) : IPostRepository
         db.Posts.Add(post);
         await db.SaveChangesAsync();
     }
+
+    public Task<int?> GetIdBySlugAsync(string slug) =>
+        db.Posts.Where(p => p.Slug == slug).Select(p => (int?)p.Id).FirstOrDefaultAsync();
 }

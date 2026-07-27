@@ -18,6 +18,8 @@ builder.Services.AddScoped<ICommentRepository, CommentRepository>();
 builder.Services.AddScoped<ICommentService, CommentService>();
 builder.Services.AddScoped<IPostRepository, PostRepository>();
 builder.Services.AddScoped<IPostService, PostService>();
+builder.Services.AddScoped<ILikeRepository, LikeRepository>();
+builder.Services.AddScoped<ILikeService, LikeService>();
 
 // 3. CORS — TODO: restrict in production
 builder.Services.AddCors(options =>
@@ -68,5 +70,6 @@ if (app.Environment.IsDevelopment())
 PostsEndpoint.Map(app);
 CommentsEndpoint.Map(app);
 AuthEndpoint.Map(app);
+LikesEndpoint.Map(app);
 
 app.Run();

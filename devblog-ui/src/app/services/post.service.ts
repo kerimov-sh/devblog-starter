@@ -17,6 +17,8 @@ export interface PostSummary {
   tags: string;
   publishedAt: string;
   author: string;
+  likeCount: number;
+  likedByCurrentUser: boolean;
 }
 
 export interface PostDetail extends PostSummary {
@@ -29,6 +31,11 @@ export interface Comment {
   authorName: string;
   body: string;
   createdAt: string;
+}
+
+export interface LikeToggleResponse {
+  liked: boolean;
+  likeCount: number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -50,5 +57,9 @@ export class PostService {
 
   addComment(slug: string, data: { authorName: string; body: string }) {
     return this.http.post(`${environment.apiUrl}/posts/${slug}/comments`, data);
+  }
+
+  toggleLike(slug: string) {
+    return this.http.post<LikeToggleResponse>(`${environment.apiUrl}/posts/${slug}/like`, {});
   }
 }

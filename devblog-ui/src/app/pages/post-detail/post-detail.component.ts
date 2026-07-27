@@ -1,8 +1,9 @@
 import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PostService, PostDetail } from '../../services/post.service';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-post-detail',
@@ -14,6 +15,8 @@ export class PostDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private cdr = inject(ChangeDetectorRef);
   private postService = inject(PostService);
+  private authService = inject(AuthService);
+  private router = inject(Router);
 
   post: PostDetail | null = null;
   commentAuthor = '';
@@ -27,6 +30,20 @@ export class PostDetailComponent implements OnInit {
       this.cdr.detectChanges(); //bu satır, değişiklikleri algılamak ve bileşeni güncellemek için ChangeDetectorRef kullanır
 
     } );
+  }
+
+  toggleLike() {
+    if (!this.post) return;
+    if (!this.authService.isLoggedIn()) {
+      this.router.navigate(['/login']);
+      return;
+    }
+    this.postService.toggleLike(this.post.slug).subscribe((result) => {
+      if (!this.post) return;
+      this.post.likedByCurrentUser = result.liked;
+      this.post.likeCount = result.likeCount;
+      this.cdr.detectChanges();
+    });
   }
 
   submitComment() {

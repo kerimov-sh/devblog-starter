@@ -1,3 +1,21 @@
+.like-button {
+  padding: 0.2rem 0.6rem;
+  border: 1px solid #ccc;
+  background: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #666;
+
+  &:hover {
+    background: #f0f0f0;
+  }
+
+  &.liked {
+    color: #e0245e;
+    border-color: #e0245e;
+  }
+}
+
 .pagination-info {
   color: #666;
   font-size: 0.9rem;

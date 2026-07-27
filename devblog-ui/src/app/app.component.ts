@@ -6,9 +6,14 @@ import { RouterOutlet, RouterLink } from '@angular/router';
   standalone: true,
   imports: [RouterOutlet, RouterLink],
   template: `
-    <nav>
-      <a routerLink="/posts">Posts</a> |
-      <a routerLink="/login">Login</a>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
+      <div class="container">
+        <span class="navbar-brand">DevBlog</span>
+        <div class="navbar-nav">
+          <a class="nav-link" routerLink="/posts">Posts</a>
+          <a class="nav-link" routerLink="/login">Login</a>
+        </div>
+      </div>
     </nav>
     <main>
       <router-outlet />

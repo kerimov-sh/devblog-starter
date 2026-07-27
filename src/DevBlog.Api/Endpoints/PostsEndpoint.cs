@@ -10,14 +10,17 @@ public static class PostsEndpoint
 {
     public static void Map(WebApplication app)
     {
-        app.MapGet("/posts", async (IPostService postService, int page = 1, int pageSize = 20, string? tag = null) =>
+        app.MapGet("/posts", async (IPostService postService, ClaimsPrincipal user, int page = 1, int pageSize = 20, string? tag = null) =>
         {
-            var result = await postService.GetPostsAsync(page, pageSize, tag);
+            int? currentUserId = int.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out var uid) ? uid : null;
+            var result = await postService.GetPostsAsync(page, pageSize, tag, currentUserId);
             return Results.Ok(result);
         });
 
-        app.MapGet("/posts/{slug}", async (string slug, AppDbContext db) =>
+        app.MapGet("/posts/{slug}", async (string slug, AppDbContext db, ClaimsPrincipal user) =>
         {
+            int? currentUserId = int.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out var uid) ? uid : null;
+
             var post = await db.Posts
                 .Include(p => p.Author)
                 .Include(p => p.Comments)
@@ -37,7 +40,9 @@ public static class PostsEndpoint
                         c.AuthorName,
                         c.Body,
                         c.CreatedAt
-                    })
+                    }),
+                    LikeCount = db.PostLikes.Count(l => l.PostId == p.Id),
+                    LikedByCurrentUser = currentUserId != null && db.PostLikes.Any(l => l.PostId == p.Id && l.UserId == currentUserId)
                 })
                 .FirstOrDefaultAsync();
 
@@ -58,7 +63,16 @@ public static class PostsEndpoint
 
 public record CreatePostRequest(string Title, string Content, string Slug, string Tags);
 
-public record PostSummaryResponse(int Id, string Title, string Slug, string Tags, DateTime PublishedAt, string Author);
+public record PostSummaryResponse(
+    int Id,
+    string Title,
+    string Slug,
+    string Tags,
+    DateTime PublishedAt,
+    string Author,
+    int LikeCount,
+    bool LikedByCurrentUser
+);
 
 public record PagedPostsResponse(
     IReadOnlyList<PostSummaryResponse> Items,

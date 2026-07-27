@@ -1,29 +1,46 @@
-@if (post) {
-  <article>
-    <h1>{{ post.title }}</h1>
-    <p><strong>{{ post.author }}</strong> | {{ post.publishedAt | date:'mediumDate' }} | {{ post.tags }}</p>
-    <div>{{ post.content }}</div>
-  </article>
+<div class="container mt-4">
+  @if (post) {
+    <article>
+      <h1>{{ post.title }}</h1>
+      <p><strong>{{ post.author }}</strong> | {{ post.publishedAt | date:'mediumDate' }} | {{ post.tags }}</p>
+      <button
+        type="button"
+        class="btn btn-sm like-button"
+        [style.color]="post.likedByCurrentUser ? '#e0245e' : '#666'"
+        [style.border-color]="post.likedByCurrentUser ? '#e0245e' : '#ccc'"
+        style="padding: 0.2rem 0.6rem; border-width: 1px; border-style: solid; background: #fff; border-radius: 4px; cursor: pointer;"
+        (click)="toggleLike()">
+        {{ post.likedByCurrentUser ? '♥' : '♡' }} {{ post.likeCount }}
+      </button>
+      <div class="mt-3">{{ post.content }}</div>
+    </article>
 
-  <section>
-    <h2>Comments</h2>
-    @for (c of post.comments; track c.id) {
-      <div>
-        <strong>{{ c.authorName }}</strong> <small>{{ c.createdAt | date:'short' }}</small>
-        <p>{{ c.body }}</p>
-      </div>
-    }
+    <section class="mt-4">
+      <h2>Comments</h2>
+      @for (c of post.comments; track c.id) {
+        <div class="mb-3">
+          <strong>{{ c.authorName }}</strong> <small class="text-muted">{{ c.createdAt | date:'short' }}</small>
+          <p>{{ c.body }}</p>
+        </div>
+      }
 
-    <h3>Add a comment</h3>
-    @if (submitted) {
-      <p>Comment submitted!</p>
-    }
-    <form (ngSubmit)="submitComment()">
-      <input [(ngModel)]="commentAuthor" name="author" placeholder="Your name" required>
-      <textarea [(ngModel)]="commentBody" name="body" placeholder="Your comment" required></textarea>
-      <button type="submit">Submit</button>
-    </form>
-  </section>
-} @else {
-  <p>Loading...</p>
-}
+      <h3>Add a comment</h3>
+      @if (submitted) {
+        <div class="alert alert-success">Comment submitted!</div>
+      }
+      <form (ngSubmit)="submitComment()">
+        <div class="mb-3">
+          <label for="commentAuthor" class="form-label">Your name</label>
+          <input id="commentAuthor" class="form-control" [(ngModel)]="commentAuthor" name="author" placeholder="Your name" required>
+        </div>
+        <div class="mb-3">
+          <label for="commentBody" class="form-label">Your comment</label>
+          <textarea id="commentBody" class="form-control" [(ngModel)]="commentBody" name="body" placeholder="Your comment" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Submit</button>
+      </form>
+    </section>
+  } @else {
+    <p>Loading...</p>
+  }
+</div>
