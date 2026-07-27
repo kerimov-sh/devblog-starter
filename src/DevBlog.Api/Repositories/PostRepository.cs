@@ -30,6 +30,22 @@ public class PostRepository(AppDbContext db) : IPostRepository
         return (posts, totalCount);
     }
 
+    public async Task<(IReadOnlyList<Post> Posts, int TotalCount)> SearchAsync(string term, int page, int pageSize)
+    {
+        var query = db.Posts.AsNoTracking().Include(p => p.Author)
+            .Where(p => p.Title.Contains(term) || p.Content.Contains(term) || p.Tags.Contains(term));
+
+        var totalCount = await query.CountAsync();
+
+        var posts = await query
+            .OrderByDescending(p => p.PublishedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return (posts, totalCount);
+    }
+
     public Task<bool> SlugExistsAsync(string slug) =>
         db.Posts.AnyAsync(p => p.Slug == slug);
 

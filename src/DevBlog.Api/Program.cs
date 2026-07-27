@@ -71,5 +71,6 @@ PostsEndpoint.Map(app);
 CommentsEndpoint.Map(app);
 AuthEndpoint.Map(app);
 LikesEndpoint.Map(app);
+SearchEndpoint.Map(app);
 
 app.Run();

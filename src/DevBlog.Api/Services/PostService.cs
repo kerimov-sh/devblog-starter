@@ -30,6 +30,34 @@ public class PostService(IPostRepository postRepository, ILikeRepository likeRep
             (int)Math.Ceiling(totalCount / (double)pageSize));
     }
 
+    public async Task<PagedPostsResponse> SearchPostsAsync(string term, int page, int pageSize, int? currentUserId)
+    {
+        page = page < 1 ? 1 : page;
+        pageSize = Math.Clamp(pageSize, 1, 100);
+
+        if (string.IsNullOrWhiteSpace(term))
+        {
+            return new PagedPostsResponse([], page, pageSize, 0, 0);
+        }
+
+        var (posts, totalCount) = await postRepository.SearchAsync(term.Trim(), page, pageSize);
+
+        var postIds = posts.Select(p => p.Id).ToList();
+        var likeCounts = await likeRepository.GetLikeCountsAsync(postIds);
+        HashSet<int> likedPostIds = currentUserId is null
+            ? []
+            : await likeRepository.GetLikedPostIdsAsync(currentUserId.Value, postIds);
+
+        var items = posts.Select(p => new PostSummaryResponse(
+            p.Id, p.Title, p.Slug, p.Tags, p.PublishedAt, p.Author.Username,
+            likeCounts.GetValueOrDefault(p.Id), likedPostIds.Contains(p.Id)
+        )).ToList();
+
+        return new PagedPostsResponse(
+            items, page, pageSize, totalCount,
+            (int)Math.Ceiling(totalCount / (double)pageSize));
+    }
+
     public async Task<CreatePostResult> CreatePostAsync(CreatePostRequest req, int authorId)
     {
         if (await postRepository.SlugExistsAsync(req.Slug))
