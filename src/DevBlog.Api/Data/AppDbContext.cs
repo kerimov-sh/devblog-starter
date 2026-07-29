@@ -9,6 +9,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Post> Posts => Set<Post>();
     public DbSet<Comment> Comments => Set<Comment>();
     public DbSet<PostLike> PostLikes => Set<PostLike>();
+    public DbSet<RagChunk> RagChunks => Set<RagChunk>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -40,6 +41,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
         modelBuilder.Entity<PostLike>()
             .HasIndex(pl => new { pl.UserId, pl.PostId })
+            .IsUnique();
+
+        modelBuilder.Entity<RagChunk>()
+            .HasIndex(c => new { c.DocumentFilename, c.ChunkIndex })
             .IsUnique();
     }
 }
