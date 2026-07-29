@@ -56,6 +56,11 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
     DataSeeder.Seed(db);
+
+    var ragDbPath = Path.GetFullPath(Path.Combine(
+        app.Environment.ContentRootPath,
+        builder.Configuration["Rag:DbPath"] ?? "../../rag/rag.db"));
+    RagChunkSeeder.Seed(db, ragDbPath);
 }
 
 app.UseCors();
