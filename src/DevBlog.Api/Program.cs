@@ -3,6 +3,7 @@ using DevBlog.Api.Data;
 using DevBlog.Api.Endpoints;
 using DevBlog.Api.Repositories;
 using DevBlog.Api.Services;
+using DevBlog.Api.Services.External;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -20,6 +21,8 @@ builder.Services.AddScoped<IPostRepository, PostRepository>();
 builder.Services.AddScoped<IPostService, PostService>();
 builder.Services.AddScoped<ILikeRepository, LikeRepository>();
 builder.Services.AddScoped<ILikeService, LikeService>();
+builder.Services.AddHttpClient<IVoyageEmbeddingClient, VoyageEmbeddingClient>();
+builder.Services.AddHttpClient<IClaudeChatClient, ClaudeChatClient>();
 
 // 3. CORS — TODO: restrict in production
 builder.Services.AddCors(options =>
