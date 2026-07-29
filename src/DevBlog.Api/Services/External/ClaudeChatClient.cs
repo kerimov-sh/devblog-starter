@@ -32,7 +32,7 @@ public class ClaudeChatClient(HttpClient httpClient, IConfiguration configuratio
         response.EnsureSuccessStatusCode();
 
         var payload = await response.Content.ReadFromJsonAsync<ClaudeMessagesResponse>(cancellationToken: ct)
-            ?? throw new InvalidOperationException("Claude API returned an empty response.");
+            ?? throw new HttpRequestException("Claude API returned an empty response.");
 
         return string.Concat(payload.Content.Select(block => block.Text));
     }

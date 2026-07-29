@@ -31,7 +31,7 @@ public class VoyageEmbeddingClient(HttpClient httpClient, IConfiguration configu
         response.EnsureSuccessStatusCode();
 
         var payload = await response.Content.ReadFromJsonAsync<VoyageEmbeddingResponse>(cancellationToken: ct)
-            ?? throw new InvalidOperationException("Voyage API returned an empty response.");
+            ?? throw new HttpRequestException("Voyage API returned an empty response.");
 
         return payload.Data[0].Embedding;
     }

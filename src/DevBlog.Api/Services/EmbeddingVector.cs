@@ -18,6 +18,8 @@ public static class EmbeddingVector
 
     public static double CosineSimilarity(float[] a, float[] b)
     {
+        if (a.Length != b.Length) return 0;
+
         double dot = 0, normA = 0, normB = 0;
         for (var i = 0; i < a.Length; i++)
         {

@@ -13,6 +13,11 @@ public static class ChatEndpoint
                 return Results.BadRequest(new { error = "Message boş olamaz." });
             }
 
+            if (request.Message.Length > 2000)
+            {
+                return Results.BadRequest(new { error = "Message 2000 karakterden uzun olamaz." });
+            }
+
             var result = await chatService.AskAsync(request.Message);
 
             if (result.Success)
@@ -28,7 +33,7 @@ public static class ChatEndpoint
                     new { error = result.ErrorMessage }, statusCode: StatusCodes.Status502BadGateway),
                 _ => Results.Problem(result.ErrorMessage)
             };
-        });
+        }).RequireRateLimiting("chat");
     }
 }
 

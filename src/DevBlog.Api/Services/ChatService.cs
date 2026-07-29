@@ -1,13 +1,15 @@
 using DevBlog.Api.Endpoints;
 using DevBlog.Api.Repositories;
 using DevBlog.Api.Services.External;
+using Microsoft.Extensions.Logging;
 
 namespace DevBlog.Api.Services;
 
 public class ChatService(
     IRagChunkRepository ragChunkRepository,
     IVoyageEmbeddingClient embeddingClient,
-    IClaudeChatClient chatClient) : IChatService
+    IClaudeChatClient chatClient,
+    ILogger<ChatService> logger) : IChatService
 {
     private const int TopK = 5;
 
@@ -37,12 +39,20 @@ public class ChatService(
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogError(ex, "Embedding servisi yapılandırma hatası.");
             return new ChatResult(false, null, ChatErrorCode.ServiceUnavailable, ex.Message);
         }
-        catch (HttpRequestException)
+        catch (HttpRequestException ex)
         {
+            logger.LogError(ex, "Embedding servisine ulaşılamadı.");
             return new ChatResult(false, null, ChatErrorCode.BadGateway,
                 "Embedding servisine ulaşılamadı.");
+        }
+        catch (OperationCanceledException ex)
+        {
+            logger.LogError(ex, "Embedding servisine zaman aşımı.");
+            return new ChatResult(false, null, ChatErrorCode.BadGateway,
+                "Embedding servisine zaman aşımı.");
         }
 
         var topChunks = chunks
@@ -64,12 +74,20 @@ public class ChatService(
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogError(ex, "Claude API yapılandırma hatası.");
             return new ChatResult(false, null, ChatErrorCode.ServiceUnavailable, ex.Message);
         }
-        catch (HttpRequestException)
+        catch (HttpRequestException ex)
         {
+            logger.LogError(ex, "Claude API'sine ulaşılamadı.");
             return new ChatResult(false, null, ChatErrorCode.BadGateway,
                 "Claude API'sine ulaşılamadı.");
+        }
+        catch (OperationCanceledException ex)
+        {
+            logger.LogError(ex, "Claude API'sine zaman aşımı.");
+            return new ChatResult(false, null, ChatErrorCode.BadGateway,
+                "Claude API'sine zaman aşımı.");
         }
 
         var sources = topChunks

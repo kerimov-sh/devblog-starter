@@ -1,9 +1,11 @@
 using System.Text;
+using System.Threading.RateLimiting;
 using DevBlog.Api.Data;
 using DevBlog.Api.Endpoints;
 using DevBlog.Api.Repositories;
 using DevBlog.Api.Services;
 using DevBlog.Api.Services.External;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -23,8 +25,10 @@ builder.Services.AddScoped<ILikeRepository, LikeRepository>();
 builder.Services.AddScoped<ILikeService, LikeService>();
 builder.Services.AddScoped<IRagChunkRepository, RagChunkRepository>();
 builder.Services.AddScoped<IChatService, ChatService>();
-builder.Services.AddHttpClient<IVoyageEmbeddingClient, VoyageEmbeddingClient>();
-builder.Services.AddHttpClient<IClaudeChatClient, ClaudeChatClient>();
+builder.Services.AddHttpClient<IVoyageEmbeddingClient, VoyageEmbeddingClient>()
+    .ConfigureHttpClient(c => c.Timeout = TimeSpan.FromSeconds(30));
+builder.Services.AddHttpClient<IClaudeChatClient, ClaudeChatClient>()
+    .ConfigureHttpClient(c => c.Timeout = TimeSpan.FromSeconds(30));
 
 // 3. CORS — TODO: restrict in production
 builder.Services.AddCors(options =>
@@ -53,6 +57,22 @@ builder.Services.AddAuthorization();
 // 6. OpenAPI
 builder.Services.AddOpenApi();
 
+// 6.1 Rate limiting — paid dış API'lere gidiyor, /chat için basit bir koruma
+// Not: ASP.NET Core'un varsayılan RejectionStatusCode'u 503'tür (Program.cs'teki
+// ChatErrorCode.ServiceUnavailable durumuyla karışmaması için burada standart
+// 429 Too Many Requests'e çeviriyoruz).
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("chat", httpContext => RateLimitPartition.GetFixedWindowLimiter(
+        partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        factory: _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 10,
+            Window = TimeSpan.FromMinutes(1)
+        }));
+});
+
 var app = builder.Build();
 
 // 7. Apply migrations and seed
@@ -71,6 +91,7 @@ using (var scope = app.Services.CreateScope())
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 if (app.Environment.IsDevelopment())
 {
