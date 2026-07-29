@@ -21,6 +21,8 @@ builder.Services.AddScoped<IPostRepository, PostRepository>();
 builder.Services.AddScoped<IPostService, PostService>();
 builder.Services.AddScoped<ILikeRepository, LikeRepository>();
 builder.Services.AddScoped<ILikeService, LikeService>();
+builder.Services.AddScoped<IRagChunkRepository, RagChunkRepository>();
+builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddHttpClient<IVoyageEmbeddingClient, VoyageEmbeddingClient>();
 builder.Services.AddHttpClient<IClaudeChatClient, ClaudeChatClient>();
 
@@ -80,5 +82,6 @@ CommentsEndpoint.Map(app);
 AuthEndpoint.Map(app);
 LikesEndpoint.Map(app);
 SearchEndpoint.Map(app);
+ChatEndpoint.Map(app);
 
 app.Run();
