@@ -15,6 +15,13 @@ Bu fazda tamamlananlar:
 - **Ingest** (`ingest.py`): `docs/*.md` dosyalarını okur, chunk'lar, `rag.db`
   SQLite dosyasına yazar. Yeniden çalıştırıldığında idempotent'tir (aynı
   dosyanın eski chunk'ları silinip yeniden yazılır).
+- **Embed** (`embed.py`): `chunks` tablosundaki henüz embed edilmemiş
+  (`embedding IS NULL`) satırları Voyage API (`voyageai` SDK, `voyage-3.5`
+  modeli) ile embed edip aynı tabloda `chunks.embedding` sütununa (düz BLOB)
+  yazar — .NET tarafındaki `RagChunkSeeder`'ın okuduğu asıl kolon budur;
+  `vec_chunks` sanal tablosu ayrıca doldurulur ama olası ileride Python tarafı
+  sorgu araçları içindir, .NET backend'i tüketmez. Yeniden çalıştırıldığında
+  yalnızca embed edilmemiş satırları işler.
 
 ## Kurulum
 
@@ -32,16 +39,29 @@ pip install -r requirements.txt
 
 ```bash
 python ingest.py
+python embed.py
 ```
 
-Varsayılan olarak `../docs` içindeki makaleleri okuyup `rag/rag.db` dosyasını
-oluşturur/günceller. `--docs-dir` ve `--db` argümanlarıyla özelleştirilebilir.
+`ingest.py` varsayılan olarak `../docs` içindeki makaleleri okuyup `rag/rag.db`
+dosyasını oluşturur/günceller (`--docs-dir` ve `--db` argümanlarıyla
+özelleştirilebilir). `embed.py` ardından çalıştırılıp henüz embed edilmemiş
+chunk'ları Voyage API ile embed eder.
 
-## Sonraki Adım (henüz yapılmadı)
+## Taze bir clone'da `rag.db`'yi yeniden üretme
 
-Bu faz yalnızca chunk + SQLite oluşturmayı kapsıyor. Bir sonraki adım:
+`rag/rag.db` bilinçli olarak `.gitignore`'dadır (Voyage API'ye para ödenerek
+üretilen bir artifact'tır, kaynak değil). Taze bir clone'da `/chat`
+endpoint'inin çalışması için:
 
-- `embed.py`: `chunks` tablosundaki (henüz `embedded_at IS NULL` olan) satırları
-  Voyage API (`voyageai` SDK) ile embed edip `vec_chunks` sanal tablosuna yazacak.
-- `query.py`: bir soru metnini embed edip `vec_chunks` üzerinde benzerlik
-  araması yaparak en alakalı chunk'ları döndürecek (retrieval).
+```bash
+cd rag
+cp .env.example .env   # VOYAGE_API_KEY'inizi .env'e girin
+python ingest.py
+python embed.py
+```
+
+Bu, `docs/*.md` makalelerinden (repo'da version control altındadır)
+`rag/rag.db`'yi baştan üretir; API her başladığında `RagChunkSeeder` bu
+dosyayı okuyup `RagChunks` tablosuna import eder. `rag.db` yoksa veya
+embed edilmiş chunk içermiyorsa API yine de başlar, sadece `/chat` endpoint'i
+503 döner.
