@@ -54,6 +54,12 @@ def connect(db_path: Path) -> sqlite3.Connection:
 def init_schema(conn: sqlite3.Connection) -> None:
     conn.executescript(_SCHEMA)
 
+    existing_columns = {row["name"] for row in conn.execute("PRAGMA table_info(chunks)")}
+    if "embedding" not in existing_columns:
+        conn.execute("ALTER TABLE chunks ADD COLUMN embedding BLOB")
+    if "embedding_model" not in existing_columns:
+        conn.execute("ALTER TABLE chunks ADD COLUMN embedding_model TEXT")
+
     existing = conn.execute(
         "SELECT name FROM sqlite_master WHERE type='table' AND name='vec_chunks'"
     ).fetchone()
