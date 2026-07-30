@@ -18,3 +18,11 @@ Thumbs.db
 
 # Security audit reports (may contain exploitable vulnerability details)
 security-reports/
+
+# RAG pipeline (Python) — secrets and generated artifacts
+rag/.env
+rag/.venv/
+rag/__pycache__/
+rag/*.db
+rag/*.db-shm
+rag/*.db-wal
