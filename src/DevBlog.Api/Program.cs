@@ -30,12 +30,18 @@ builder.Services.AddHttpClient<IVoyageEmbeddingClient, VoyageEmbeddingClient>()
 builder.Services.AddHttpClient<IClaudeChatClient, ClaudeChatClient>()
     .ConfigureHttpClient(c => c.Timeout = TimeSpan.FromSeconds(30));
 
-// 3. CORS — TODO: restrict in production
+// 3. CORS — auth now relies on httpOnly cookies, so AllowAnyOrigin + AllowCredentials is not viable
+// (browsers reject that combination). Origins are read from config so dev/prod can differ without a
+// code change; falls back to the Angular dev server origin if not configured.
+var allowedCorsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+    ?? ["http://localhost:4200"];
+
 builder.Services.AddCors(options =>
     options.AddDefaultPolicy(policy =>
-        policy.AllowAnyOrigin()
+        policy.WithOrigins(allowedCorsOrigins)
               .AllowAnyMethod()
-              .AllowAnyHeader()));
+              .AllowAnyHeader()
+              .AllowCredentials()));
 
 // 4. JWT Authentication
 var jwtSecret = "devblog-super-secret-key-2024-dev"; // TODO: move to config
@@ -48,6 +54,24 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
             ValidateIssuer = false,
             ValidateAudience = false
+        };
+
+        // The JWT now travels as an httpOnly cookie instead of an Authorization header. If a caller still
+        // sends a Bearer header (e.g. a non-browser client), that takes precedence; otherwise fall back to
+        // reading the cookie so [Authorize]/RequireAuthorization keeps working transparently.
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                if (string.IsNullOrEmpty(context.Token) &&
+                    context.Request.Cookies.TryGetValue(AuthEndpoint.AccessTokenCookieName, out var cookieToken) &&
+                    !string.IsNullOrEmpty(cookieToken))
+                {
+                    context.Token = cookieToken;
+                }
+
+                return Task.CompletedTask;
+            }
         };
     });
 
@@ -89,6 +113,37 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.UseCors();
+
+// Double-submit-cookie CSRF protection: state-changing requests must echo the XSRF-TOKEN cookie value
+// (set at login, JS-readable) back in the X-CSRF-Token header. GET/HEAD/OPTIONS are read-only and exempt;
+// /auth/login is exempt because no XSRF cookie exists yet before a successful login.
+app.Use(async (context, next) =>
+{
+    var request = context.Request;
+    var isStateChangingMethod = HttpMethods.IsPost(request.Method)
+        || HttpMethods.IsPut(request.Method)
+        || HttpMethods.IsDelete(request.Method)
+        || HttpMethods.IsPatch(request.Method);
+
+    var isExempt = request.Path.StartsWithSegments("/auth/login")
+        || request.Path.StartsWithSegments("/chat");
+
+    if (isStateChangingMethod && !isExempt)
+    {
+        var cookieToken = request.Cookies[AuthEndpoint.XsrfCookieName];
+        var headerToken = request.Headers["X-CSRF-Token"].ToString();
+
+        if (string.IsNullOrEmpty(cookieToken) || string.IsNullOrEmpty(headerToken) || cookieToken != headerToken)
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            await context.Response.WriteAsJsonAsync(new { error = "CSRF token missing or invalid." });
+            return;
+        }
+    }
+
+    await next();
+});
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
