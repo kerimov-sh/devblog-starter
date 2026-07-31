@@ -71,7 +71,8 @@ public record PostSummaryResponse(
     DateTime PublishedAt,
     string Author,
     int LikeCount,
-    bool LikedByCurrentUser
+    bool LikedByCurrentUser,
+    int CommentCount
 );
 
 public record PagedPostsResponse(

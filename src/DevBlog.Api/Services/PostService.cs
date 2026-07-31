@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DevBlog.Api.Services;
 
-public class PostService(IPostRepository postRepository, ILikeRepository likeRepository) : IPostService
+public class PostService(IPostRepository postRepository, ILikeRepository likeRepository, ICommentRepository commentRepository) : IPostService
 {
     public async Task<PagedPostsResponse> GetPostsAsync(int page, int pageSize, string? tag, int? currentUserId)
     {
@@ -19,10 +19,12 @@ public class PostService(IPostRepository postRepository, ILikeRepository likeRep
         HashSet<int> likedPostIds = currentUserId is null
             ? []
             : await likeRepository.GetLikedPostIdsAsync(currentUserId.Value, postIds);
+        var commentCounts = await commentRepository.GetCommentCountsAsync(postIds);
 
         var items = posts.Select(p => new PostSummaryResponse(
             p.Id, p.Title, p.Slug, p.Tags, p.PublishedAt, p.Author.Username,
-            likeCounts.GetValueOrDefault(p.Id), likedPostIds.Contains(p.Id)
+            likeCounts.GetValueOrDefault(p.Id), likedPostIds.Contains(p.Id),
+            commentCounts.GetValueOrDefault(p.Id)
         )).ToList();
 
         return new PagedPostsResponse(
@@ -47,10 +49,12 @@ public class PostService(IPostRepository postRepository, ILikeRepository likeRep
         HashSet<int> likedPostIds = currentUserId is null
             ? []
             : await likeRepository.GetLikedPostIdsAsync(currentUserId.Value, postIds);
+        var commentCounts = await commentRepository.GetCommentCountsAsync(postIds);
 
         var items = posts.Select(p => new PostSummaryResponse(
             p.Id, p.Title, p.Slug, p.Tags, p.PublishedAt, p.Author.Username,
-            likeCounts.GetValueOrDefault(p.Id), likedPostIds.Contains(p.Id)
+            likeCounts.GetValueOrDefault(p.Id), likedPostIds.Contains(p.Id),
+            commentCounts.GetValueOrDefault(p.Id)
         )).ToList();
 
         return new PagedPostsResponse(
