@@ -41,6 +41,7 @@ public static class PostsEndpoint
                         c.Body,
                         c.CreatedAt
                     }),
+                    CommentCount = p.Comments.Count(),
                     LikeCount = db.PostLikes.Count(l => l.PostId == p.Id),
                     LikedByCurrentUser = currentUserId != null && db.PostLikes.Any(l => l.PostId == p.Id && l.UserId == currentUserId)
                 })
