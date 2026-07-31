@@ -47,6 +47,14 @@ export class PostService {
     return this.http.get<PagedResult<PostSummary>>(`${environment.apiUrl}/posts`, { params });
   }
 
+  searchPosts(term: string, page = 1, pageSize = 20) {
+    const params = new HttpParams().set('page', page).set('pageSize', pageSize);
+    return this.http.get<PagedResult<PostSummary>>(
+      `${environment.apiUrl}/search/${encodeURIComponent(term)}`,
+      { params }
+    );
+  }
+
   getPost(slug: string) {
     return this.http.get<PostDetail>(`${environment.apiUrl}/posts/${slug}`);
   }
