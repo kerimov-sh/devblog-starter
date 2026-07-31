@@ -20,4 +20,15 @@ public class CommentRepository(AppDbContext db) : ICommentRepository
 
         return (comments, totalCount);
     }
+
+    public async Task<Dictionary<int, int>> GetCommentCountsAsync(IEnumerable<int> postIds)
+    {
+        var ids = postIds.ToList();
+
+        return await db.Comments
+            .Where(c => ids.Contains(c.PostId))
+            .GroupBy(c => c.PostId)
+            .Select(g => new { PostId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.PostId, x => x.Count);
+    }
 }
